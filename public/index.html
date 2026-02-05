@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Software Inventory Analyzer | Hub International</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --border-color: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --accent-blue: #0077c8;
+            --accent-blue-light: #00a3e0;
+            --accent-green: #3fb950;
+            --accent-orange: #d29922;
+            --accent-red: #f85149;
+            --accent-purple: #a371f7;
+            --accent-cyan: #00a3e0;
+            --hub-blue-dark: #1e3a5f;
+            --hub-blue: #0077c8;
+            --hub-blue-light: #00a3e0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo img {
+            height: 32px;
+            width: auto;
+        }
+
+        .logo-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border-color);
+            margin: 0 0.5rem;
+        }
+
+        .logo h1 { font-size: 1.15rem; font-weight: 600; color: var(--text-secondary); }
+
+        .nav-tabs { display: flex; gap: 0.5rem; }
+
+        .nav-tab {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: none;
+            background: transparent;
+        }
+
+        .nav-tab:hover { color: var(--text-primary); background: var(--bg-tertiary); }
+        .nav-tab.active { color: var(--text-primary); background: var(--bg-tertiary); }
+
+        .main-content { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+
+        .view { display: none; }
+        .view.active { display: block; }
+
+        .upload-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            background: var(--bg-secondary);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--accent-blue);
+            background: rgba(88, 166, 255, 0.05);
+        }
+
+        .upload-zone svg { width: 64px; height: 64px; color: var(--text-muted); margin-bottom: 1rem; }
+        .upload-zone h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
+        .upload-zone p { color: var(--text-secondary); margin-bottom: 1rem; }
+
+        .upload-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .upload-btn:hover { background: #4a9eff; transform: translateY(-1px); }
+
+        #fileInput { display: none; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1.25rem;
+        }
+
+        .stat-card .label { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.25rem; }
+        .stat-card .value { font-size: 2rem; font-weight: 700; font-family: 'IBM Plex Mono', monospace; }
+        .stat-card.blue .value { color: var(--accent-blue); }
+        .stat-card.green .value { color: var(--accent-green); }
+        .stat-card.orange .value { color: var(--accent-orange); }
+        .stat-card.red .value { color: var(--accent-red); }
+
+        .results-section { margin-top: 2rem; }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .badge.blue { background: rgba(88, 166, 255, 0.15); color: var(--accent-blue); }
+        .badge.green { background: rgba(63, 185, 80, 0.15); color: var(--accent-green); }
+        .badge.orange { background: rgba(210, 153, 34, 0.15); color: var(--accent-orange); }
+        .badge.red { background: rgba(248, 81, 73, 0.15); color: var(--accent-red); }
+
+        .table-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+
+        th, td {
+            padding: 0.875rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(88, 166, 255, 0.03); }
+
+        .category-tag {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+
+        .deployment-tag {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .deployment-tag.desktop { background: rgba(88, 166, 255, 0.15); color: var(--accent-blue); }
+        .deployment-tag.saas { background: rgba(163, 113, 247, 0.15); color: var(--accent-purple); }
+        .deployment-tag.both { background: rgba(57, 197, 207, 0.15); color: var(--accent-cyan); }
+
+        .description-cell { max-width: 300px; color: var(--text-secondary); font-size: 0.9rem; }
+        .count-cell { font-family: 'IBM Plex Mono', monospace; text-align: center; }
+
+        .action-btn {
+            padding: 0.4rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+        .action-btn.danger:hover { border-color: var(--accent-red); color: var(--accent-red); }
+        .action-btn.include { border-color: var(--accent-green); color: var(--accent-green); }
+        .action-btn.include:hover { background: var(--accent-green); color: white; }
+
+        .custom-category-input {
+            width: 100%;
+            padding: 0.6rem 0.75rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--accent-blue);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .result-tabs {
+            display: flex;
+            gap: 0.25rem;
+            background: var(--bg-secondary);
+            padding: 0.25rem;
+            border-radius: 8px;
+            width: fit-content;
+        }
+
+        .result-tab {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: none;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .result-tab:hover { color: var(--text-primary); }
+        .result-tab.active { color: var(--text-primary); background: var(--bg-tertiary); }
+
+        .result-panel { display: none; }
+        .result-panel.active { display: block; }
+
+        .export-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--accent-green);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .export-btn:hover { background: #46c458; }
+
+        .reset-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .reset-btn:hover { background: var(--bg-secondary); border-color: var(--accent-blue); }
+
+        .action-buttons { display: flex; gap: 0.5rem; }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1200px) {
+            .admin-grid { grid-template-columns: 1fr; }
+        }
+
+        .admin-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1.5rem;
+        }
+
+        .admin-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.35rem; }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.6rem 0.75rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+        .btn-primary {
+            padding: 0.6rem 1.25rem;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover { background: #4a9eff; }
+
+        .loading { display: none; text-align: center; padding: 3rem; }
+        .loading.active { display: block; }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .table-scroll { max-height: 500px; overflow-y: auto; }
+
+        .table-scroll::-webkit-scrollbar { width: 8px; }
+        .table-scroll::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        .table-scroll::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        .table-scroll::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        .filter-bar { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+            max-width: 300px;
+            padding: 0.5rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .search-input:focus { outline: none; border-color: var(--accent-blue); }
+
+        .filter-select {
+            padding: 0.5rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .toast-container { position: fixed; bottom: 2rem; right: 2rem; z-index: 1000; }
+
+        .toast {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.success { border-left: 3px solid var(--accent-green); }
+        .toast.error { border-left: 3px solid var(--accent-red); }
+        .toast.info { border-left: 3px solid var(--accent-blue); }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-content h3 { margin-bottom: 1rem; }
+
+        .agency-input-container {
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .agency-input {
+            padding: 0.6rem 1rem;
+            width: 300px;
+            max-width: 100%;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        .agency-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .agency-display {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .agency-display .label {
+            color: var(--text-secondary);
+        }
+
+        .agency-display .name {
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <img src="hub-logo.png" alt="Hub International" style="height: 32px;">
+                <div class="logo-divider"></div>
+                <h1>Software Inventory Analyzer</h1>
+            </div>
+            <nav class="nav-tabs">
+                <button class="nav-tab active" data-view="analyze">Analyze</button>
+                <button class="nav-tab" data-view="admin">Admin Rules</button>
+                <button class="nav-tab" data-view="feedback">Feedback Log</button>
+                <button class="nav-tab" data-view="history">History</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- Analyze View -->
+        <div id="analyze-view" class="view active">
+            <div class="upload-zone" id="dropZone">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                <div class="agency-input-container">
+                    <input type="text" id="agencyInput" class="agency-input" placeholder="Agency name (auto-detected from file)">
+                </div>
+                <h3>Upload Atera Software Inventory</h3>
+                <p>Drag and drop your Excel file here, or click to browse</p>
+                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                    </svg>
+                    Select File
+                </button>
+                <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analyzing software inventory...</p>
+            </div>
+
+            <div id="results" style="display: none;">
+                <div id="agency-display-container" style="text-align: center; display: none;">
+                    <div class="agency-display">
+                        <span class="label">Agency:</span>
+                        <span class="name" id="agency-display-name"></span>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card blue">
+                        <div class="label">Total Input</div>
+                        <div class="value" id="stat-input">0</div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="label">Cleaned Output</div>
+                        <div class="value" id="stat-output">0</div>
+                    </div>
+                    <div class="stat-card orange">
+                        <div class="label">Excluded</div>
+                        <div class="value" id="stat-excluded">0</div>
+                    </div>
+                    <div class="stat-card red">
+                        <div class="label">Needs Review</div>
+                        <div class="value" id="stat-unmapped">0</div>
+                    </div>
+                </div>
+
+                <div class="section-header">
+                    <div class="result-tabs">
+                        <button class="result-tab active" data-panel="included">
+                            Included <span class="badge green" id="tab-included-count">0</span>
+                        </button>
+                        <button class="result-tab" data-panel="excluded">
+                            Excluded <span class="badge orange" id="tab-excluded-count">0</span>
+                        </button>
+                        <button class="result-tab" data-panel="unmapped">
+                            Needs Review <span class="badge red" id="tab-unmapped-count">0</span>
+                        </button>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="reset-btn" onclick="resetAnalysis()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            New Analysis
+                        </button>
+                        <button class="export-btn" onclick="exportResults()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Export CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Included Panel -->
+                <div id="panel-included" class="result-panel active">
+                    <div class="filter-bar">
+                        <input type="text" class="search-input" id="search-included" placeholder="Search applications...">
+                        <select class="filter-select" id="filter-category"><option value="">All Categories</option></select>
+                        <select class="filter-select" id="filter-deployment">
+                            <option value="">All Types</option>
+                            <option value="Desktop">Desktop</option>
+                            <option value="SaaS">SaaS</option>
+                            <option value="Both">Both</option>
+                        </select>
+                    </div>
+                    <div class="table-container">
+                        <div class="table-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Application</th>
+                                        <th>Category</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                        <th style="text-align:center">Entries</th>
+                                        <th style="text-align:center">Devices</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="included-table"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Excluded Panel -->
+                <div id="panel-excluded" class="result-panel">
+                    <div class="filter-bar">
+                        <input type="text" class="search-input" id="search-excluded" placeholder="Search excluded items...">
+                    </div>
+                    <div class="table-container">
+                        <div class="table-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Software Name</th>
+                                        <th>Exclusion Category</th>
+                                        <th>Reason</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="excluded-table"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Unmapped Panel -->
+                <div id="panel-unmapped" class="result-panel">
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                        These items don't match any existing rules. Click "Add Rule" to categorize them or exclude them.
+                    </p>
+                    <div class="table-container">
+                        <div class="table-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Software Name</th>
+                                        <th>Publisher</th>
+                                        <th style="text-align:center">Devices</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="unmapped-table"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin View -->
+        <div id="admin-view" class="view">
+            <div class="admin-grid">
+                <div class="admin-card">
+                    <h3>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                        </svg>
+                        Exclusion Rules
+                    </h3>
+                    <form id="exclusion-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Pattern Type</label>
+                                <select name="pattern_type" required>
+                                    <option value="exact">Exact Match</option>
+                                    <option value="contains">Contains</option>
+                                    <option value="startswith">Starts With</option>
+                                    <option value="endswith">Ends With</option>
+                                    <option value="regex">Regex</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Category</label>
+                                <input type="text" name="category" placeholder="e.g., Windows Updates" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Pattern Value</label>
+                            <input type="text" name="pattern_value" placeholder="e.g., Microsoft Visual C++" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Reason</label>
+                            <input type="text" name="reason" placeholder="Why should this be excluded?">
+                        </div>
+                        <button type="submit" class="btn-primary">Add Exclusion Rule</button>
+                    </form>
+                    <div class="table-container" style="margin-top: 1rem;">
+                        <div class="table-scroll" style="max-height: 300px;">
+                            <table>
+                                <thead><tr><th>Pattern</th><th>Type</th><th>Category</th><th></th></tr></thead>
+                                <tbody id="exclusion-rules-table"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="admin-card">
+                    <h3>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                        Software Mappings
+                    </h3>
+                    <form id="mapping-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Pattern Type</label>
+                                <select name="pattern_type" required>
+                                    <option value="exact">Exact Match</option>
+                                    <option value="contains">Contains</option>
+                                    <option value="startswith">Starts With</option>
+                                    <option value="regex">Regex</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Canonical Name</label>
+                                <input type="text" name="canonical_name" placeholder="e.g., Microsoft 365" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Original Pattern</label>
+                            <input type="text" name="original_pattern" placeholder="e.g., Microsoft 365 Apps" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Category</label>
+                                <input type="text" name="category" placeholder="e.g., Office Productivity">
+                            </div>
+                            <div class="form-group">
+                                <label>Deployment Type</label>
+                                <select name="deployment_type">
+                                    <option value="Desktop">Desktop</option>
+                                    <option value="SaaS">SaaS</option>
+                                    <option value="Both">Both</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea name="description" rows="2" placeholder="Brief description of the software"></textarea>
+                        </div>
+                        <button type="submit" class="btn-primary">Add Mapping</button>
+                    </form>
+                    <div class="table-container" style="margin-top: 1rem;">
+                        <div class="table-scroll" style="max-height: 300px;">
+                            <table>
+                                <thead><tr><th>Pattern</th><th>Canonical Name</th><th>Category</th><th></th></tr></thead>
+                                <tbody id="mappings-table"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback View -->
+        <div id="feedback-view" class="view">
+            <div class="admin-card">
+                <h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                    </svg>
+                    Admin Feedback Log
+                </h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                    This log shows all administrator feedback submitted to refine the analysis rules over time.
+                </p>
+                <div class="table-container">
+                    <div class="table-scroll">
+                        <table>
+                            <thead><tr><th>Date</th><th>Software</th><th>Action</th><th>Reason</th><th>Applied</th></tr></thead>
+                            <tbody id="feedback-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History View -->
+        <div id="history-view" class="view">
+            <div class="admin-card">
+                <h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Analysis History
+                </h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                    Previous software inventory analyses by agency.
+                </p>
+                <div class="table-container">
+                    <div class="table-scroll">
+                        <table>
+                            <thead><tr><th>Date</th><th>Agency</th><th>Filename</th><th>Input</th><th>Output</th><th>Excluded</th><th>Status</th></tr></thead>
+                            <tbody id="history-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Feedback Modal -->
+    <div id="feedback-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Add Rule for Software</h3>
+            <form id="modal-feedback-form">
+                <input type="hidden" name="software_name" id="modal-software-name">
+                <div class="form-group">
+                    <label>Software Name</label>
+                    <input type="text" id="modal-software-display" disabled style="background:var(--bg-tertiary);">
+                </div>
+                <div class="form-group">
+                    <label>Action</label>
+                    <select name="action_type" id="modal-action" required>
+                        <option value="categorize">Add to Category (Include)</option>
+                        <option value="exclude">Exclude from Results</option>
+                    </select>
+                </div>
+                <div id="categorize-fields">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Canonical Name</label>
+                            <input type="text" name="suggested_canonical_name" placeholder="Simplified name">
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select name="suggested_category" id="feedback-category-select" onchange="handleCategoryChange(this, 'feedback-custom-category')">
+                                <option value="">Select a category...</option>
+                                <option value="Office Productivity">Office Productivity</option>
+                                <option value="Security">Security</option>
+                                <option value="Communication">Communication</option>
+                                <option value="Browser">Browser</option>
+                                <option value="Remote Access">Remote Access</option>
+                                <option value="RMM / MSP Tools">RMM / MSP Tools</option>
+                                <option value="Database">Database</option>
+                                <option value="Development Tools">Development Tools</option>
+                                <option value="Network / Infrastructure">Network / Infrastructure</option>
+                                <option value="Industry / LOB">Industry / LOB</option>
+                                <option value="Backup / Recovery">Backup / Recovery</option>
+                                <option value="Cloud Storage">Cloud Storage</option>
+                                <option value="Utilities">Utilities</option>
+                                <option value="__custom__">+ Add New Category...</option>
+                            </select>
+                            <input type="text" id="feedback-custom-category" class="custom-category-input" placeholder="Enter new category name" style="display:none; margin-top:0.5rem;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Deployment Type</label>
+                        <select name="suggested_deployment_type">
+                            <option value="Desktop">Desktop</option>
+                            <option value="SaaS">SaaS</option>
+                            <option value="Both">Both</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Reason / Description</label>
+                    <textarea name="reason" rows="3" placeholder="Explain why this software should be handled this way..." required></textarea>
+                </div>
+                <div style="display:flex; gap:1rem; justify-content:flex-end;">
+                    <button type="button" class="action-btn" onclick="closeFeedbackModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Include Modal (for excluded items) -->
+    <div id="include-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Include This Software</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                This will create a mapping rule so this software is always included in future analyses.
+            </p>
+            <form id="include-form">
+                <input type="hidden" name="software_name" id="include-software-name">
+                <div class="form-group">
+                    <label>Software Name</label>
+                    <input type="text" id="include-software-display" disabled style="background:var(--bg-tertiary);">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Canonical Name</label>
+                        <input type="text" name="canonical_name" id="include-canonical" placeholder="e.g., Microsoft 365" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select name="category" id="include-category" onchange="handleCategoryChange(this, 'include-custom-category')" required>
+                            <option value="">Select category...</option>
+                            <option value="Office Productivity">Office Productivity</option>
+                            <option value="Security">Security</option>
+                            <option value="Communication">Communication</option>
+                            <option value="Browser">Browser</option>
+                            <option value="Remote Access">Remote Access</option>
+                            <option value="RMM / MSP Tools">RMM / MSP Tools</option>
+                            <option value="Database">Database</option>
+                            <option value="Development Tools">Development Tools</option>
+                            <option value="Network / Infrastructure">Network / Infrastructure</option>
+                            <option value="Industry / LOB">Industry / LOB</option>
+                            <option value="Backup / Recovery">Backup / Recovery</option>
+                            <option value="Cloud Storage">Cloud Storage</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="__custom__">+ Add New Category...</option>
+                        </select>
+                        <input type="text" id="include-custom-category" class="custom-category-input" placeholder="Enter new category name" style="display:none; margin-top:0.5rem;">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Deployment Type</label>
+                    <select name="deployment_type">
+                        <option value="Desktop">Desktop</option>
+                        <option value="SaaS">SaaS</option>
+                        <option value="Both">Both</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Description (optional)</label>
+                    <input type="text" name="description" placeholder="Brief description of this software">
+                </div>
+                <div style="display:flex; gap:1rem; justify-content:flex-end;">
+                    <button type="button" class="action-btn" onclick="closeIncludeModal()">Cancel</button>
+                    <button type="submit" class="btn-primary" style="background:var(--accent-green);">Include Software</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        let currentResults = null;
+
+        // Handle category dropdown with custom option
+        function handleCategoryChange(selectElement, customInputId) {
+            const customInput = document.getElementById(customInputId);
+            if (selectElement.value === '__custom__') {
+                customInput.style.display = 'block';
+                customInput.required = true;
+                customInput.focus();
+            } else {
+                customInput.style.display = 'none';
+                customInput.required = false;
+                customInput.value = '';
+            }
+        }
+
+        // Get category value (from dropdown or custom input)
+        function getCategoryValue(selectElement, customInputId) {
+            if (selectElement.value === '__custom__') {
+                return document.getElementById(customInputId).value.trim();
+            }
+            return selectElement.value;
+        }
+
+        // Navigation
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(`${tab.dataset.view}-view`).classList.add('active');
+                if (tab.dataset.view === 'admin') loadAdminData();
+                if (tab.dataset.view === 'feedback') loadFeedback();
+                if (tab.dataset.view === 'history') loadHistory();
+            });
+        });
+
+        // Result tabs
+        document.querySelectorAll('.result-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.result-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.result-panel').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(`panel-${tab.dataset.panel}`).classList.add('active');
+            });
+        });
+
+        // File upload
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('dragover'); });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', (e) => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+        // Prevent agency input from triggering file drop
+        document.getElementById('agencyInput').addEventListener('click', (e) => e.stopPropagation());
+
+        async function handleFile(file) {
+            const manualAgency = document.getElementById('agencyInput').value.trim();
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            if (manualAgency) {
+                formData.append('agency', manualAgency);
+            }
+
+            document.getElementById('loading').classList.add('active');
+            dropZone.style.display = 'none';
+            document.getElementById('results').style.display = 'none';
+
+            try {
+                const response = await fetch('/api/analyze', { method: 'POST', body: formData });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error);
+                currentResults = data;
+                // Use server-detected agency if no manual input
+                currentResults.agency = manualAgency || data.agency;
+                displayResults(data);
+                showToast('Analysis complete!', 'success');
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+                dropZone.style.display = 'block';
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+            }
+        }
+
+        function displayResults(data) {
+            // Show agency if provided
+            const agencyContainer = document.getElementById('agency-display-container');
+            const agencyName = data.agency || currentResults?.agency;
+            if (agencyName) {
+                document.getElementById('agency-display-name').textContent = agencyName;
+                agencyContainer.style.display = 'block';
+            } else {
+                agencyContainer.style.display = 'none';
+            }
+
+            document.getElementById('stat-input').textContent = data.summary.totalInput;
+            document.getElementById('stat-output').textContent = data.summary.totalOutput;
+            document.getElementById('stat-excluded').textContent = data.summary.excluded;
+            document.getElementById('stat-unmapped').textContent = data.summary.unmapped;
+
+            document.getElementById('tab-included-count').textContent = data.summary.totalOutput;
+            document.getElementById('tab-excluded-count').textContent = data.summary.excluded;
+            document.getElementById('tab-unmapped-count').textContent = data.summary.unmapped;
+
+            document.getElementById('included-table').innerHTML = data.included.map(item => `
+                <tr>
+                    <td><strong>${escapeHtml(item.canonicalName)}</strong></td>
+                    <td><span class="category-tag">${escapeHtml(item.category)}</span></td>
+                    <td><span class="deployment-tag ${item.deploymentType.toLowerCase()}">${item.deploymentType}</span></td>
+                    <td class="description-cell">${escapeHtml(item.description || '-')}</td>
+                    <td class="count-cell">${item.originalCount}</td>
+                    <td class="count-cell">${item.totalDevices}</td>
+                </tr>
+            `).join('');
+
+            const categories = [...new Set(data.included.map(i => i.category))].sort();
+            document.getElementById('filter-category').innerHTML = '<option value="">All Categories</option>' + 
+                categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+
+            document.getElementById('excluded-table').innerHTML = data.excluded.map(item => `
+                <tr>
+                    <td>${escapeHtml(item.name)}</td>
+                    <td><span class="category-tag">${escapeHtml(item.reason)}</span></td>
+                    <td style="color:var(--text-secondary)">${escapeHtml(item.ruleReason || '-')}</td>
+                    <td><button class="action-btn include" onclick="openIncludeModal('${escapeHtml(item.name).replace(/'/g, "\\'")}')">Include</button></td>
+                </tr>
+            `).join('');
+
+            document.getElementById('unmapped-table').innerHTML = data.unmapped.map(item => `
+                <tr>
+                    <td>${escapeHtml(item.name)}</td>
+                    <td style="color:var(--text-secondary)">${escapeHtml(item.publisher || '-')}</td>
+                    <td class="count-cell">${item.deviceCount || 1}</td>
+                    <td><button class="action-btn" onclick="openFeedbackModal('${escapeHtml(item.name).replace(/'/g, "\\'")}')">Add Rule</button></td>
+                </tr>
+            `).join('');
+
+            document.getElementById('results').style.display = 'block';
+        }
+
+        function resetAnalysis() {
+            currentResults = null;
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('dropZone').style.display = 'block';
+            document.getElementById('fileInput').value = '';
+            document.getElementById('agencyInput').value = '';
+            document.getElementById('agency-display-container').style.display = 'none';
+            
+            // Reset filters
+            document.getElementById('search-included').value = '';
+            document.getElementById('filter-category').value = '';
+            document.getElementById('filter-deployment').value = '';
+            document.getElementById('search-excluded').value = '';
+            
+            // Reset to first tab
+            document.querySelectorAll('.result-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.result-panel').forEach(p => p.classList.remove('active'));
+            document.querySelector('.result-tab[data-panel="included"]').classList.add('active');
+            document.getElementById('panel-included').classList.add('active');
+        }
+
+        // Filtering
+        document.getElementById('search-included').addEventListener('input', filterIncluded);
+        document.getElementById('filter-category').addEventListener('change', filterIncluded);
+        document.getElementById('filter-deployment').addEventListener('change', filterIncluded);
+
+        function filterIncluded() {
+            if (!currentResults) return;
+            const search = document.getElementById('search-included').value.toLowerCase();
+            const category = document.getElementById('filter-category').value;
+            const deployment = document.getElementById('filter-deployment').value;
+
+            const filtered = currentResults.included.filter(item => {
+                const matchSearch = !search || item.canonicalName.toLowerCase().includes(search) || (item.description || '').toLowerCase().includes(search);
+                const matchCategory = !category || item.category === category;
+                const matchDeployment = !deployment || item.deploymentType === deployment;
+                return matchSearch && matchCategory && matchDeployment;
+            });
+
+            document.getElementById('included-table').innerHTML = filtered.map(item => `
+                <tr>
+                    <td><strong>${escapeHtml(item.canonicalName)}</strong></td>
+                    <td><span class="category-tag">${escapeHtml(item.category)}</span></td>
+                    <td><span class="deployment-tag ${item.deploymentType.toLowerCase()}">${item.deploymentType}</span></td>
+                    <td class="description-cell">${escapeHtml(item.description || '-')}</td>
+                    <td class="count-cell">${item.originalCount}</td>
+                    <td class="count-cell">${item.totalDevices}</td>
+                </tr>
+            `).join('');
+        }
+
+        document.getElementById('search-excluded').addEventListener('input', (e) => {
+            if (!currentResults) return;
+            const search = e.target.value.toLowerCase();
+            const filtered = currentResults.excluded.filter(item => item.name.toLowerCase().includes(search) || item.reason.toLowerCase().includes(search));
+            document.getElementById('excluded-table').innerHTML = filtered.map(item => `
+                <tr>
+                    <td>${escapeHtml(item.name)}</td>
+                    <td><span class="category-tag">${escapeHtml(item.reason)}</span></td>
+                    <td style="color:var(--text-secondary)">${escapeHtml(item.ruleReason || '-')}</td>
+                    <td><button class="action-btn include" onclick="openIncludeModal('${escapeHtml(item.name).replace(/'/g, "\\'")}')">Include</button></td>
+                </tr>
+            `).join('');
+        });
+
+        async function exportResults() {
+            if (!currentResults) return;
+            try {
+                const response = await fetch('/api/export/csv', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: currentResults.included })
+                });
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'software_analysis.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('Export downloaded!', 'success');
+            } catch (error) {
+                showToast('Export failed: ' + error.message, 'error');
+            }
+        }
+
+        async function loadAdminData() {
+            try {
+                const [exclusions, mappings] = await Promise.all([
+                    fetch('/api/exclusion-rules').then(r => r.json()),
+                    fetch('/api/software-mappings').then(r => r.json())
+                ]);
+
+                document.getElementById('exclusion-rules-table').innerHTML = exclusions.map(rule => `
+                    <tr>
+                        <td style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem">${escapeHtml(rule.pattern_value)}</td>
+                        <td><span class="badge blue">${rule.pattern_type}</span></td>
+                        <td>${escapeHtml(rule.category)}</td>
+                        <td><button class="action-btn danger" onclick="deleteExclusion(${rule.id})">×</button></td>
+                    </tr>
+                `).join('');
+
+                document.getElementById('mappings-table').innerHTML = mappings.map(rule => `
+                    <tr>
+                        <td style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem">${escapeHtml(rule.original_pattern)}</td>
+                        <td><strong>${escapeHtml(rule.canonical_name)}</strong></td>
+                        <td><span class="category-tag">${escapeHtml(rule.category || '-')}</span></td>
+                        <td><button class="action-btn danger" onclick="deleteMapping(${rule.id})">×</button></td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                showToast('Failed to load admin data', 'error');
+            }
+        }
+
+        document.getElementById('exclusion-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(e.target));
+            try {
+                await fetch('/api/exclusion-rules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                e.target.reset();
+                loadAdminData();
+                showToast('Exclusion rule added!', 'success');
+            } catch (error) {
+                showToast('Failed to add rule', 'error');
+            }
+        });
+
+        document.getElementById('mapping-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(e.target));
+            try {
+                await fetch('/api/software-mappings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                e.target.reset();
+                loadAdminData();
+                showToast('Mapping added!', 'success');
+            } catch (error) {
+                showToast('Failed to add mapping', 'error');
+            }
+        });
+
+        async function deleteExclusion(id) {
+            if (!confirm('Delete this exclusion rule?')) return;
+            try {
+                await fetch(`/api/exclusion-rules/${id}`, { method: 'DELETE' });
+                loadAdminData();
+                showToast('Rule deleted', 'success');
+            } catch (error) {
+                showToast('Failed to delete', 'error');
+            }
+        }
+
+        async function deleteMapping(id) {
+            if (!confirm('Delete this mapping?')) return;
+            try {
+                await fetch(`/api/software-mappings/${id}`, { method: 'DELETE' });
+                loadAdminData();
+                showToast('Mapping deleted', 'success');
+            } catch (error) {
+                showToast('Failed to delete', 'error');
+            }
+        }
+
+        function openFeedbackModal(softwareName) {
+            document.getElementById('modal-software-name').value = softwareName;
+            document.getElementById('modal-software-display').value = softwareName;
+            document.getElementById('feedback-modal').style.display = 'flex';
+        }
+
+        function closeFeedbackModal() {
+            document.getElementById('feedback-modal').style.display = 'none';
+            document.getElementById('modal-feedback-form').reset();
+            document.getElementById('feedback-custom-category').style.display = 'none';
+        }
+
+        // Include modal functions (for excluded items)
+        function openIncludeModal(softwareName) {
+            document.getElementById('include-software-name').value = softwareName;
+            document.getElementById('include-software-display').value = softwareName;
+            // Pre-fill canonical name with a cleaned version
+            document.getElementById('include-canonical').value = softwareName.replace(/\s*\([^)]*\)/g, '').replace(/\s*\d+(\.\d+)*\s*$/g, '').trim();
+            document.getElementById('include-modal').style.display = 'flex';
+        }
+
+        function closeIncludeModal() {
+            document.getElementById('include-modal').style.display = 'none';
+            document.getElementById('include-form').reset();
+            document.getElementById('include-custom-category').style.display = 'none';
+        }
+
+        document.getElementById('include-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const softwareName = formData.get('software_name');
+            
+            // Get category from dropdown or custom input
+            const categorySelect = document.getElementById('include-category');
+            const category = getCategoryValue(categorySelect, 'include-custom-category');
+            
+            const data = {
+                pattern_type: 'exact',
+                original_pattern: softwareName,
+                canonical_name: formData.get('canonical_name') || softwareName,
+                category: category,
+                deployment_type: formData.get('deployment_type'),
+                description: formData.get('reason')
+            };
+
+            try {
+                // Create a mapping rule so this software is always included
+                const response = await fetch('/api/software-mappings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) throw new Error('Failed to create mapping');
+
+                // Also log this as feedback for audit trail
+                await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        software_name: softwareName,
+                        action_type: 'include',
+                        reason: formData.get('reason'),
+                        suggested_canonical_name: data.canonical_name,
+                        suggested_category: data.category,
+                        suggested_deployment_type: data.deployment_type
+                    })
+                });
+
+                closeIncludeModal();
+                showToast('Software will be included in future analyses!', 'success');
+
+                // Remove from excluded table
+                const excludedTable = document.getElementById('excluded-table');
+                excludedTable.querySelectorAll('tr').forEach(row => {
+                    if (row.cells[0].textContent === softwareName) row.remove();
+                });
+
+                // Update count
+                const excludedCount = excludedTable.querySelectorAll('tr').length;
+                document.getElementById('tab-excluded-count').textContent = excludedCount;
+                document.getElementById('stat-excluded').textContent = excludedCount;
+
+            } catch (error) {
+                showToast('Failed to include software: ' + error.message, 'error');
+            }
+        });
+
+        document.getElementById('modal-action').addEventListener('change', (e) => {
+            document.getElementById('categorize-fields').style.display = e.target.value === 'categorize' ? 'block' : 'none';
+        });
+
+        document.getElementById('modal-feedback-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            // Get category from dropdown or custom input if categorizing
+            if (data.action_type === 'categorize') {
+                const categorySelect = document.getElementById('feedback-category-select');
+                data.suggested_category = getCategoryValue(categorySelect, 'feedback-custom-category');
+            }
+            
+            try {
+                const response = await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!response.ok) throw new Error('Failed to submit');
+                closeFeedbackModal();
+                showToast('Feedback submitted and rule applied!', 'success');
+                
+                const unmappedTable = document.getElementById('unmapped-table');
+                unmappedTable.querySelectorAll('tr').forEach(row => {
+                    if (row.cells[0].textContent === data.software_name) row.remove();
+                });
+                const unmappedCount = unmappedTable.querySelectorAll('tr').length;
+                document.getElementById('tab-unmapped-count').textContent = unmappedCount;
+                document.getElementById('stat-unmapped').textContent = unmappedCount;
+            } catch (error) {
+                showToast('Failed to submit feedback', 'error');
+            }
+        });
+
+        async function loadFeedback() {
+            try {
+                const feedback = await fetch('/api/feedback').then(r => r.json());
+                const feedbackTable = document.getElementById('feedback-table');
+                
+                if (feedback.length === 0) {
+                    feedbackTable.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);padding:2rem;">No feedback submitted yet</td></tr>';
+                    return;
+                }
+
+                feedbackTable.innerHTML = feedback.map(item => `
+                    <tr>
+                        <td style="white-space:nowrap">${new Date(item.created_at).toLocaleDateString()}</td>
+                        <td><strong>${escapeHtml(item.software_name)}</strong></td>
+                        <td><span class="badge ${item.action_type === 'exclude' ? 'orange' : 'blue'}">${item.action_type}</span></td>
+                        <td style="color:var(--text-secondary);max-width:300px">${escapeHtml(item.reason)}</td>
+                        <td>${item.applied_to_rules ? '<span class="badge green">Yes</span>' : '<span class="badge">No</span>'}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                showToast('Failed to load feedback', 'error');
+            }
+        }
+
+        async function loadHistory() {
+            try {
+                const history = await fetch('/api/history').then(r => r.json());
+                const historyTable = document.getElementById('history-table');
+                
+                if (history.length === 0) {
+                    historyTable.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary);padding:2rem;">No analysis history yet</td></tr>';
+                    return;
+                }
+
+                historyTable.innerHTML = history.map(item => `
+                    <tr>
+                        <td style="white-space:nowrap">${new Date(item.uploaded_at).toLocaleDateString()}</td>
+                        <td><strong>${escapeHtml(item.agency_name || '-')}</strong></td>
+                        <td>${escapeHtml(item.upload_filename)}</td>
+                        <td class="count-cell">${item.input_count || '-'}</td>
+                        <td class="count-cell">${item.output_count || '-'}</td>
+                        <td class="count-cell">${item.excluded_count || '-'}</td>
+                        <td><span class="badge ${item.status === 'completed' ? 'green' : 'orange'}">${item.status}</span></td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                showToast('Failed to load history', 'error');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    ${type === 'success' ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>' : 
+                      type === 'error' ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>' :
+                      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'}
+                </svg>
+                <span>${escapeHtml(message)}</span>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        loadAdminData();
+    </script>
+</body>
+</html>
