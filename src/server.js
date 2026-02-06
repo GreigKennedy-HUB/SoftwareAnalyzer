@@ -304,6 +304,57 @@ app.post('/api/analyze', upload.single('file'), async (req, res) => {
             totalDevices: item.originalEntries.reduce((sum, e) => sum + (parseInt(e.deviceCount) || 1), 0)
         }));
 
+        // Fetch disposition mappings for all canonical names
+        const canonicalNames = includedArray.map(item => item.canonicalName);
+        let dispositionMap = new Map();
+        
+        if (canonicalNames.length > 0) {
+            try {
+                const dispResult = await pool.query(`
+                    SELECT dm.*, aps.name as replacement_name, aps.category as replacement_category
+                    FROM disposition_mappings dm
+                    LEFT JOIN approved_software aps ON dm.approved_software_id = aps.id
+                    WHERE dm.canonical_name = ANY($1)
+                `, [canonicalNames]);
+                
+                dispResult.rows.forEach(row => {
+                    dispositionMap.set(row.canonical_name, {
+                        disposition: row.disposition,
+                        replacementId: row.approved_software_id,
+                        replacementName: row.replacement_name,
+                        replacementCategory: row.replacement_category,
+                        notes: row.notes
+                    });
+                });
+            } catch (dispErr) {
+                console.warn('Could not fetch dispositions:', dispErr.message);
+            }
+        }
+
+        // Create disposition entries for any canonical names that don't have one yet
+        const missingDispositions = canonicalNames.filter(name => !dispositionMap.has(name));
+        for (const name of missingDispositions) {
+            try {
+                await pool.query(`
+                    INSERT INTO disposition_mappings (canonical_name, disposition, updated_by)
+                    VALUES ($1, 'pending', 'system')
+                    ON CONFLICT (canonical_name) DO NOTHING
+                `, [name]);
+                dispositionMap.set(name, { disposition: 'pending', replacementId: null, replacementName: null, notes: null });
+            } catch (insertErr) {
+                // Ignore - might already exist from concurrent request
+            }
+        }
+
+        // Add disposition data to included results
+        const includedWithDisposition = includedArray.map(item => ({
+            ...item,
+            disposition: dispositionMap.get(item.canonicalName)?.disposition || 'pending',
+            replacementId: dispositionMap.get(item.canonicalName)?.replacementId || null,
+            replacementName: dispositionMap.get(item.canonicalName)?.replacementName || null,
+            dispositionNotes: dispositionMap.get(item.canonicalName)?.notes || null
+        }));
+
         // Log to history
         try {
             await pool.query(
@@ -323,11 +374,12 @@ app.post('/api/analyze', upload.single('file'), async (req, res) => {
             agency: agencyName,
             summary: {
                 totalInput: softwareList.length,
-                totalOutput: includedArray.length,
+                totalOutput: includedWithDisposition.length,
                 excluded: results.excluded.length,
-                unmapped: results.unmapped.length
+                unmapped: results.unmapped.length,
+                pendingDisposition: includedWithDisposition.filter(i => i.disposition === 'pending').length
             },
-            included: includedArray.sort((a, b) => a.canonicalName.localeCompare(b.canonicalName)),
+            included: includedWithDisposition.sort((a, b) => a.canonicalName.localeCompare(b.canonicalName)),
             excluded: results.excluded,
             unmapped: results.unmapped.sort((a, b) => (b.deviceCount || 0) - (a.deviceCount || 0))
         });
@@ -428,9 +480,9 @@ app.put('/api/software-mappings/:id', async (req, res) => {
         const result = await pool.query(
             `UPDATE software_mappings 
              SET pattern_type = $1, original_pattern = $2, canonical_name = $3, category = $4, 
-                 deployment_type = $5, description = $6, is_active = $7, updated_at = NOW()
+                 deployment_type = $5, description = $6, is_active = COALESCE($7, is_active), updated_at = NOW()
              WHERE id = $8 RETURNING *`,
-            [pattern_type, original_pattern, canonical_name, category, deployment_type, description, is_active, id]
+            [pattern_type, original_pattern, canonical_name, category, deployment_type, description, is_active !== undefined ? is_active : null, id]
         );
         res.json(result.rows[0]);
     } catch (error) {
@@ -513,13 +565,95 @@ app.get('/api/feedback', async (req, res) => {
     }
 });
 
-// Get analysis history
-app.get('/api/history', async (req, res) => {
+// ============================================
+// SAVED CLIENTS
+// ============================================
+
+// Get all saved clients
+app.get('/api/clients', async (req, res) => {
     try {
-        const result = await pool.query(
-            'SELECT * FROM analysis_history ORDER BY uploaded_at DESC LIMIT 50'
-        );
+        const result = await pool.query(`
+            SELECT id, agency_name, source_filename, summary, notes, status, created_at, updated_at, created_by, updated_by
+            FROM saved_clients 
+            ORDER BY updated_at DESC
+        `);
         res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get a single client with full analysis data
+app.get('/api/clients/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await pool.query(
+            'SELECT * FROM saved_clients WHERE id = $1',
+            [id]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Client not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Save a new client
+app.post('/api/clients', async (req, res) => {
+    try {
+        const { agency_name, analysis_data, source_filename, summary, notes, status } = req.body;
+        
+        const result = await pool.query(`
+            INSERT INTO saved_clients (agency_name, analysis_data, source_filename, summary, notes, status)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING *
+        `, [agency_name, JSON.stringify(analysis_data), source_filename, JSON.stringify(summary), notes, status || 'in_progress']);
+        
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Update an existing client
+app.put('/api/clients/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { agency_name, analysis_data, summary, notes, status, updated_by } = req.body;
+        
+        const result = await pool.query(`
+            UPDATE saved_clients 
+            SET agency_name = COALESCE($1, agency_name),
+                analysis_data = COALESCE($2, analysis_data),
+                summary = COALESCE($3, summary),
+                notes = COALESCE($4, notes),
+                status = COALESCE($5, status),
+                updated_by = $6,
+                updated_at = NOW()
+            WHERE id = $7
+            RETURNING *
+        `, [agency_name, analysis_data ? JSON.stringify(analysis_data) : null, summary ? JSON.stringify(summary) : null, notes, status, updated_by || 'admin', id]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Client not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Delete a client
+app.delete('/api/clients/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await pool.query('DELETE FROM saved_clients WHERE id = $1 RETURNING id', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Client not found' });
+        }
+        res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -549,25 +683,34 @@ app.get('/api/categories', async (req, res) => {
 // Export results as CSV
 app.post('/api/export/csv', (req, res) => {
     try {
-        const { data } = req.body;
+        const { data, agency } = req.body;
         
-        const headers = ['Application Name', 'Category', 'Deployment Type', 'Description', 'Original Entries', 'Total Devices'];
+        const headers = ['Application Name', 'Category', 'Deployment Type', 'Disposition', 'Hub Standard Replacement', 'Description', 'Original Entries', 'Total Devices', 'Notes'];
         const rows = data.map(item => [
             item.canonicalName,
             item.category,
             item.deploymentType,
+            item.disposition || 'pending',
+            item.replacementName || '',
             item.description,
             item.originalCount,
-            item.totalDevices
+            item.totalDevices,
+            item.dispositionNotes || ''
         ]);
         
-        const csvContent = [
+        // Add agency header if provided
+        let csvContent = '';
+        if (agency) {
+            csvContent = `Agency: ${agency}\nExport Date: ${new Date().toLocaleDateString()}\n\n`;
+        }
+        
+        csvContent += [
             headers.join(','),
             ...rows.map(row => row.map(cell => `"${(cell || '').toString().replace(/"/g, '""')}"`).join(','))
         ].join('\n');
         
         res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', 'attachment; filename="software_analysis.csv"');
+        res.setHeader('Content-Disposition', `attachment; filename="software_analysis_${agency ? agency.replace(/[^a-z0-9]/gi, '_') + '_' : ''}${new Date().toISOString().split('T')[0]}.csv"`);
         res.send(csvContent);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -581,6 +724,185 @@ app.get('/api/health', async (req, res) => {
         res.json({ status: 'healthy', database: 'connected' });
     } catch (error) {
         res.json({ status: 'degraded', database: 'disconnected', error: error.message });
+    }
+});
+
+// ============================================
+// PHASE 3: APPROVED SOFTWARE & DISPOSITIONS
+// ============================================
+
+// Get all approved software (Hub standards)
+app.get('/api/approved-software', async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT * FROM approved_software WHERE is_active = true ORDER BY category, name'
+        );
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Add approved software
+app.post('/api/approved-software', async (req, res) => {
+    try {
+        const { name, category, vendor, notes } = req.body;
+        const result = await pool.query(
+            `INSERT INTO approved_software (name, category, vendor, notes)
+             VALUES ($1, $2, $3, $4) RETURNING *`,
+            [name, category, vendor, notes]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        if (error.code === '23505') { // unique violation
+            res.status(400).json({ error: 'Software with this name already exists' });
+        } else {
+            res.status(500).json({ error: error.message });
+        }
+    }
+});
+
+// Update approved software
+app.put('/api/approved-software/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, category, vendor, notes, is_active } = req.body;
+        const result = await pool.query(
+            `UPDATE approved_software 
+             SET name = $1, category = $2, vendor = $3, notes = $4, is_active = $5, updated_at = NOW()
+             WHERE id = $6 RETURNING *`,
+            [name, category, vendor, notes, is_active, id]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Delete approved software
+app.delete('/api/approved-software/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await pool.query('DELETE FROM approved_software WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get all disposition mappings with approved software details
+app.get('/api/disposition-mappings', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT dm.*, aps.name as replacement_name, aps.category as replacement_category
+            FROM disposition_mappings dm
+            LEFT JOIN approved_software aps ON dm.approved_software_id = aps.id
+            ORDER BY dm.disposition, dm.canonical_name
+        `);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get disposition for a specific canonical name
+app.get('/api/disposition-mappings/:canonicalName', async (req, res) => {
+    try {
+        const { canonicalName } = req.params;
+        const result = await pool.query(`
+            SELECT dm.*, aps.name as replacement_name, aps.category as replacement_category
+            FROM disposition_mappings dm
+            LEFT JOIN approved_software aps ON dm.approved_software_id = aps.id
+            WHERE dm.canonical_name = $1
+        `, [canonicalName]);
+        res.json(result.rows[0] || null);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Create or update disposition mapping
+app.post('/api/disposition-mappings', async (req, res) => {
+    try {
+        const { canonical_name, disposition, approved_software_id, notes, updated_by } = req.body;
+        
+        // Upsert - insert or update if exists
+        const result = await pool.query(`
+            INSERT INTO disposition_mappings (canonical_name, disposition, approved_software_id, notes, updated_by)
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (canonical_name) 
+            DO UPDATE SET 
+                disposition = EXCLUDED.disposition,
+                approved_software_id = EXCLUDED.approved_software_id,
+                notes = EXCLUDED.notes,
+                updated_by = EXCLUDED.updated_by,
+                updated_at = NOW()
+            RETURNING *
+        `, [canonical_name, disposition, approved_software_id || null, notes, updated_by || 'admin']);
+        
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Bulk update dispositions (for setting multiple at once)
+app.post('/api/disposition-mappings/bulk', async (req, res) => {
+    try {
+        const { mappings } = req.body; // Array of { canonical_name, disposition, approved_software_id, notes }
+        const results = [];
+        
+        for (const mapping of mappings) {
+            const result = await pool.query(`
+                INSERT INTO disposition_mappings (canonical_name, disposition, approved_software_id, notes, updated_by)
+                VALUES ($1, $2, $3, $4, 'admin')
+                ON CONFLICT (canonical_name) 
+                DO UPDATE SET 
+                    disposition = EXCLUDED.disposition,
+                    approved_software_id = EXCLUDED.approved_software_id,
+                    notes = EXCLUDED.notes,
+                    updated_at = NOW()
+                RETURNING *
+            `, [mapping.canonical_name, mapping.disposition, mapping.approved_software_id || null, mapping.notes]);
+            results.push(result.rows[0]);
+        }
+        
+        res.json({ success: true, updated: results.length });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Delete disposition mapping
+app.delete('/api/disposition-mappings/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await pool.query('DELETE FROM disposition_mappings WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get dispositions for multiple canonical names (used during analysis)
+app.post('/api/disposition-mappings/lookup', async (req, res) => {
+    try {
+        const { canonical_names } = req.body;
+        
+        if (!canonical_names || canonical_names.length === 0) {
+            return res.json([]);
+        }
+        
+        const result = await pool.query(`
+            SELECT dm.*, aps.name as replacement_name, aps.category as replacement_category
+            FROM disposition_mappings dm
+            LEFT JOIN approved_software aps ON dm.approved_software_id = aps.id
+            WHERE dm.canonical_name = ANY($1)
+        `, [canonical_names]);
+        
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 

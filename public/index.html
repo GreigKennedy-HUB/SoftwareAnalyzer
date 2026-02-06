@@ -90,6 +90,24 @@
         .nav-tab:hover { color: var(--text-primary); background: var(--bg-tertiary); }
         .nav-tab.active { color: var(--text-primary); background: var(--bg-tertiary); }
 
+        .new-client-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--hub-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: 1rem;
+        }
+
+        .new-client-btn:hover { background: var(--hub-blue-dark); }
+
         .main-content { max-width: 1400px; margin: 0 auto; padding: 2rem; }
 
         .view { display: none; }
@@ -227,7 +245,71 @@
         .deployment-tag.saas { background: rgba(163, 113, 247, 0.15); color: var(--accent-purple); }
         .deployment-tag.both { background: rgba(57, 197, 207, 0.15); color: var(--accent-cyan); }
 
-        .description-cell { max-width: 300px; color: var(--text-secondary); font-size: 0.9rem; }
+        .disposition-tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .disposition-tag.keep { background: rgba(63, 185, 80, 0.15); color: var(--accent-green); }
+        .disposition-tag.discard { background: rgba(248, 81, 73, 0.15); color: var(--accent-red); }
+        .disposition-tag.replace { background: rgba(0, 119, 200, 0.15); color: var(--hub-blue); }
+        .disposition-tag.pending { background: rgba(210, 153, 34, 0.15); color: var(--accent-orange); }
+
+        .replacement-name {
+            font-size: 0.85rem;
+            color: var(--accent-cyan);
+            font-weight: 500;
+        }
+
+        .replacement-name.none {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .disposition-select {
+            padding: 0.3rem 0.5rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .disposition-select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-badge.in_progress { background: rgba(210, 153, 34, 0.15); color: var(--accent-orange); }
+        .status-badge.review { background: rgba(0, 119, 200, 0.15); color: var(--hub-blue); }
+        .status-badge.complete { background: rgba(63, 185, 80, 0.15); color: var(--accent-green); }
+
+        .client-row { cursor: pointer; }
+        .client-row:hover td { background: rgba(0, 119, 200, 0.08); }
+
+        .description-cell { 
+            max-width: 200px; 
+            color: var(--text-secondary); 
+            font-size: 0.85rem; 
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: help;
+        }
         .count-cell { font-family: 'IBM Plex Mono', monospace; text-align: center; }
 
         .action-btn {
@@ -303,6 +385,23 @@
         }
 
         .export-btn:hover { background: #46c458; }
+
+        .save-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--hub-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .save-btn:hover { background: var(--hub-blue-dark); }
 
         .reset-btn {
             display: inline-flex;
@@ -531,10 +630,17 @@
             </div>
             <nav class="nav-tabs">
                 <button class="nav-tab active" data-view="analyze">Analyze</button>
+                <button class="nav-tab" data-view="clients">Clients</button>
                 <button class="nav-tab" data-view="admin">Admin Rules</button>
+                <button class="nav-tab" data-view="hubstandards">Hub Standards</button>
                 <button class="nav-tab" data-view="feedback">Feedback Log</button>
-                <button class="nav-tab" data-view="history">History</button>
             </nav>
+            <button class="new-client-btn" onclick="startNewClient()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Start New Client
+            </button>
         </div>
     </header>
 
@@ -603,11 +709,11 @@
                         </button>
                     </div>
                     <div class="action-buttons">
-                        <button class="reset-btn" onclick="resetAnalysis()">
+                        <button class="save-btn" onclick="openSaveClientModal()">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
                             </svg>
-                            New Analysis
+                            <span id="save-btn-text">Save Client</span>
                         </button>
                         <button class="export-btn" onclick="exportResults()">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -629,6 +735,13 @@
                             <option value="SaaS">SaaS</option>
                             <option value="Both">Both</option>
                         </select>
+                        <select class="filter-select" id="filter-disposition">
+                            <option value="">All Dispositions</option>
+                            <option value="pending">Pending</option>
+                            <option value="keep">Keep</option>
+                            <option value="replace">Replace</option>
+                            <option value="discard">Discard</option>
+                        </select>
                     </div>
                     <div class="table-container">
                         <div class="table-scroll">
@@ -636,11 +749,13 @@
                                 <thead>
                                     <tr>
                                         <th>Application</th>
+                                        <th>Description</th>
                                         <th>Category</th>
                                         <th>Type</th>
-                                        <th>Description</th>
-                                        <th style="text-align:center">Entries</th>
+                                        <th>Disposition</th>
+                                        <th>Hub Standard</th>
                                         <th style="text-align:center">Devices</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="included-table"></tbody>
@@ -719,7 +834,18 @@
                             </div>
                             <div class="form-group">
                                 <label>Category</label>
-                                <input type="text" name="category" placeholder="e.g., Windows Updates" required>
+                                <select name="category" id="exclusion-category-select" onchange="handleCategoryChange(this, 'exclusion-custom-category')" required>
+                                    <option value="">Select category...</option>
+                                    <option value="Windows Updates">Windows Updates</option>
+                                    <option value="Drivers">Drivers</option>
+                                    <option value="Language Packs">Language Packs</option>
+                                    <option value="System Components">System Components</option>
+                                    <option value="OEM Bloatware">OEM Bloatware</option>
+                                    <option value="Runtimes">Runtimes</option>
+                                    <option value="User Defined">User Defined</option>
+                                    <option value="__custom__">+ Add New Category...</option>
+                                </select>
+                                <input type="text" id="exclusion-custom-category" class="custom-category-input" placeholder="Enter new category name" style="display:none; margin-top:0.5rem;">
                             </div>
                         </div>
                         <div class="form-group">
@@ -772,7 +898,24 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label>Category</label>
-                                <input type="text" name="category" placeholder="e.g., Office Productivity">
+                                <select name="category" id="mapping-category-select" onchange="handleCategoryChange(this, 'mapping-custom-category')">
+                                    <option value="">Select category...</option>
+                                    <option value="Office Productivity">Office Productivity</option>
+                                    <option value="Security">Security</option>
+                                    <option value="Communication">Communication</option>
+                                    <option value="Browser">Browser</option>
+                                    <option value="Remote Access">Remote Access</option>
+                                    <option value="RMM / MSP Tools">RMM / MSP Tools</option>
+                                    <option value="Database">Database</option>
+                                    <option value="Development Tools">Development Tools</option>
+                                    <option value="Network / Infrastructure">Network / Infrastructure</option>
+                                    <option value="Industry / LOB">Industry / LOB</option>
+                                    <option value="Backup / Recovery">Backup / Recovery</option>
+                                    <option value="Cloud Storage">Cloud Storage</option>
+                                    <option value="Utilities">Utilities</option>
+                                    <option value="__custom__">+ Add New Category...</option>
+                                </select>
+                                <input type="text" id="mapping-custom-category" class="custom-category-input" placeholder="Enter new category name" style="display:none; margin-top:0.5rem;">
                             </div>
                             <div class="form-group">
                                 <label>Deployment Type</label>
@@ -794,6 +937,101 @@
                             <table>
                                 <thead><tr><th>Pattern</th><th>Canonical Name</th><th>Category</th><th></th></tr></thead>
                                 <tbody id="mappings-table"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hub Standards View -->
+        <div id="hubstandards-view" class="view">
+            <div class="admin-grid">
+                <div class="admin-card">
+                    <h3>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Approved Software (Hub Standards)
+                    </h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                        Software approved for use within Hub International.
+                    </p>
+                    <form id="approved-software-form" style="margin-bottom: 1rem;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Software Name</label>
+                                <input type="text" name="name" placeholder="e.g., MS Teams (Hub)" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Category</label>
+                                <select name="category" id="approved-category-select" onchange="handleCategoryChange(this, 'approved-custom-category')">
+                                    <option value="">Select category...</option>
+                                    <option value="Office Productivity">Office Productivity</option>
+                                    <option value="Security">Security</option>
+                                    <option value="Communication">Communication</option>
+                                    <option value="Browser">Browser</option>
+                                    <option value="Remote Access">Remote Access</option>
+                                    <option value="RMM / MSP Tools">RMM / MSP Tools</option>
+                                    <option value="Database">Database</option>
+                                    <option value="Development Tools">Development Tools</option>
+                                    <option value="Network / Infrastructure">Network / Infrastructure</option>
+                                    <option value="Industry / LOB">Industry / LOB</option>
+                                    <option value="Backup / Recovery">Backup / Recovery</option>
+                                    <option value="Cloud Storage">Cloud Storage</option>
+                                    <option value="Utilities">Utilities</option>
+                                    <option value="__custom__">+ Add New Category...</option>
+                                </select>
+                                <input type="text" id="approved-custom-category" class="custom-category-input" placeholder="Enter new category name" style="display:none; margin-top:0.5rem;">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Vendor</label>
+                                <input type="text" name="vendor" placeholder="e.g., Microsoft">
+                            </div>
+                            <div class="form-group">
+                                <label>Notes</label>
+                                <input type="text" name="notes" placeholder="e.g., Hub standard platform">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary">Add Approved Software</button>
+                    </form>
+                    <div class="table-container">
+                        <div class="table-scroll" style="max-height: 350px;">
+                            <table>
+                                <thead><tr><th>Name</th><th>Category</th><th>Vendor</th><th></th></tr></thead>
+                                <tbody id="approved-software-table"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="admin-card">
+                    <h3>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                        </svg>
+                        Disposition Mappings
+                    </h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                        Default dispositions for known software. Maps canonical names to Keep/Discard/Replace.
+                    </p>
+                    <div class="filter-bar" style="margin-bottom: 1rem;">
+                        <input type="text" class="search-input" id="search-dispositions" placeholder="Search mappings...">
+                        <select class="filter-select" id="filter-disposition-status">
+                            <option value="">All Dispositions</option>
+                            <option value="pending">Pending</option>
+                            <option value="keep">Keep</option>
+                            <option value="replace">Replace</option>
+                            <option value="discard">Discard</option>
+                        </select>
+                    </div>
+                    <div class="table-container">
+                        <div class="table-scroll" style="max-height: 400px;">
+                            <table>
+                                <thead><tr><th>Canonical Name</th><th>Disposition</th><th>Hub Standard</th><th></th></tr></thead>
+                                <tbody id="disposition-mappings-table"></tbody>
                             </table>
                         </div>
                     </div>
@@ -824,23 +1062,41 @@
             </div>
         </div>
 
-        <!-- History View -->
-        <div id="history-view" class="view">
+        <!-- Clients View -->
+        <div id="clients-view" class="view">
             <div class="admin-card">
                 <h3>
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                     </svg>
-                    Analysis History
+                    Saved Clients
                 </h3>
                 <p style="color: var(--text-secondary); margin-bottom: 1rem;">
-                    Previous software inventory analyses by agency.
+                    Previously analyzed agencies. Click to load and continue working on their software inventory.
                 </p>
+                <div class="filter-bar" style="margin-bottom: 1rem;">
+                    <input type="text" class="search-input" id="search-clients" placeholder="Search clients...">
+                    <select class="filter-select" id="filter-client-status">
+                        <option value="">All Statuses</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="review">Ready for Review</option>
+                        <option value="complete">Complete</option>
+                    </select>
+                </div>
                 <div class="table-container">
                     <div class="table-scroll">
                         <table>
-                            <thead><tr><th>Date</th><th>Agency</th><th>Filename</th><th>Input</th><th>Output</th><th>Excluded</th><th>Status</th></tr></thead>
-                            <tbody id="history-table"></tbody>
+                            <thead>
+                                <tr>
+                                    <th>Agency</th>
+                                    <th>Status</th>
+                                    <th>Software</th>
+                                    <th>Pending</th>
+                                    <th>Last Updated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clients-table"></tbody>
                         </table>
                     </div>
                 </div>
@@ -974,10 +1230,190 @@
         </div>
     </div>
 
+    <!-- Disposition Modal -->
+    <div id="disposition-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Set Disposition</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                Decide how this software should be handled during M&A integration.
+            </p>
+            <form id="disposition-form">
+                <input type="hidden" name="canonical_name" id="disposition-canonical-name">
+                <div class="form-group">
+                    <label>Software</label>
+                    <input type="text" id="disposition-software-display" disabled style="background:var(--bg-tertiary);">
+                </div>
+                <div class="form-group">
+                    <label>Disposition</label>
+                    <select name="disposition" id="disposition-select" required onchange="toggleReplacementField()">
+                        <option value="pending">Pending - Needs Decision</option>
+                        <option value="keep">Keep - Agency can retain</option>
+                        <option value="discard">Discard - Must be removed</option>
+                        <option value="replace">Replace - Transition to Hub standard</option>
+                    </select>
+                </div>
+                <div class="form-group" id="replacement-field" style="display:none;">
+                    <label>Hub Standard Replacement</label>
+                    <select name="approved_software_id" id="replacement-select">
+                        <option value="">Select Hub standard...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Notes (optional)</label>
+                    <textarea name="notes" rows="2" placeholder="Additional context or instructions..."></textarea>
+                </div>
+                <div style="display:flex; gap:1rem; justify-content:flex-end;">
+                    <button type="button" class="action-btn" onclick="closeDispositionModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Disposition</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Save Client Modal -->
+    <div id="save-client-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="save-client-title">Save Client</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                Save this analysis to continue working on it later.
+            </p>
+            <form id="save-client-form">
+                <input type="hidden" id="save-client-id">
+                <div class="form-group">
+                    <label>Agency Name</label>
+                    <input type="text" name="agency_name" id="save-client-agency" placeholder="e.g., Fenner & Esler Agency" required>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status" id="save-client-status">
+                        <option value="in_progress">In Progress</option>
+                        <option value="review">Ready for Review</option>
+                        <option value="complete">Complete</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Notes (optional)</label>
+                    <textarea name="notes" id="save-client-notes" rows="2" placeholder="Any notes about this client..."></textarea>
+                </div>
+                <div style="display:flex; gap:1rem; justify-content:flex-end;">
+                    <button type="button" class="action-btn" onclick="closeSaveClientModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Mapping Modal -->
+    <div id="edit-mapping-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Edit Software Mapping</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                Modify this mapping rule.
+            </p>
+            <form id="edit-mapping-form">
+                <input type="hidden" id="edit-mapping-id">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Pattern Type</label>
+                        <select name="pattern_type" id="edit-mapping-pattern-type" required>
+                            <option value="exact">Exact Match</option>
+                            <option value="contains">Contains</option>
+                            <option value="startswith">Starts With</option>
+                            <option value="regex">Regex</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Canonical Name</label>
+                        <input type="text" name="canonical_name" id="edit-mapping-canonical" placeholder="e.g., Microsoft 365" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Original Pattern</label>
+                    <input type="text" name="original_pattern" id="edit-mapping-pattern" placeholder="e.g., Microsoft 365 Apps" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select name="category" id="edit-mapping-category-select" onchange="handleCategoryChange(this, 'edit-mapping-custom-category')">
+                            <option value="">Select category...</option>
+                            <option value="Office Productivity">Office Productivity</option>
+                            <option value="Security">Security</option>
+                            <option value="Communication">Communication</option>
+                            <option value="Browser">Browser</option>
+                            <option value="Remote Access">Remote Access</option>
+                            <option value="RMM / MSP Tools">RMM / MSP Tools</option>
+                            <option value="Database">Database</option>
+                            <option value="Development Tools">Development Tools</option>
+                            <option value="Network / Infrastructure">Network / Infrastructure</option>
+                            <option value="Industry / LOB">Industry / LOB</option>
+                            <option value="Backup / Recovery">Backup / Recovery</option>
+                            <option value="Cloud Storage">Cloud Storage</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Runtime Components">Runtime Components</option>
+                            <option value="__custom__">+ Add New Category...</option>
+                        </select>
+                        <input type="text" id="edit-mapping-custom-category" class="custom-category-input" placeholder="Enter new category name" style="display:none; margin-top:0.5rem;">
+                    </div>
+                    <div class="form-group">
+                        <label>Deployment Type</label>
+                        <select name="deployment_type" id="edit-mapping-deployment">
+                            <option value="Desktop">Desktop</option>
+                            <option value="SaaS">SaaS</option>
+                            <option value="Both">Both</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description" id="edit-mapping-description" rows="2" placeholder="Brief description of the software"></textarea>
+                </div>
+                <div style="display:flex; gap:1rem; justify-content:flex-end;">
+                    <button type="button" class="action-btn" onclick="closeEditMappingModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="toast-container" id="toast-container"></div>
 
     <script>
         let currentResults = null;
+        let hasUnsavedChanges = false;
+
+        // Warn user before leaving with unsaved changes
+        window.addEventListener('beforeunload', (e) => {
+            if (hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                return e.returnValue;
+            }
+        });
+
+        // Mark changes as saved
+        function markChangesSaved() {
+            hasUnsavedChanges = false;
+            updateUnsavedIndicator();
+        }
+
+        // Mark that there are unsaved changes
+        function markUnsavedChanges() {
+            hasUnsavedChanges = true;
+            updateUnsavedIndicator();
+        }
+
+        // Update visual indicator for unsaved changes
+        function updateUnsavedIndicator() {
+            const saveBtn = document.getElementById('save-btn-text');
+            const baseTxt = currentClientId ? 'Update Client' : 'Save Client';
+            if (hasUnsavedChanges) {
+                saveBtn.textContent = baseTxt + ' *';
+                document.title = '● Software Inventory Analyzer | Hub International';
+            } else {
+                saveBtn.textContent = baseTxt;
+                document.title = 'Software Inventory Analyzer | Hub International';
+            }
+        }
 
         // Handle category dropdown with custom option
         function handleCategoryChange(selectElement, customInputId) {
@@ -1009,8 +1445,9 @@
                 tab.classList.add('active');
                 document.getElementById(`${tab.dataset.view}-view`).classList.add('active');
                 if (tab.dataset.view === 'admin') loadAdminData();
+                if (tab.dataset.view === 'hubstandards') loadHubStandards();
                 if (tab.dataset.view === 'feedback') loadFeedback();
-                if (tab.dataset.view === 'history') loadHistory();
+                if (tab.dataset.view === 'clients') loadClients();
             });
         });
 
@@ -1058,9 +1495,11 @@
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error);
                 currentResults = data;
+                currentClientId = null;  // New analysis, not saved yet
                 // Use server-detected agency if no manual input
                 currentResults.agency = manualAgency || data.agency;
                 displayResults(data);
+                markUnsavedChanges();  // New analysis is unsaved
                 showToast('Analysis complete!', 'success');
             } catch (error) {
                 showToast('Error: ' + error.message, 'error');
@@ -1090,16 +1529,7 @@
             document.getElementById('tab-excluded-count').textContent = data.summary.excluded;
             document.getElementById('tab-unmapped-count').textContent = data.summary.unmapped;
 
-            document.getElementById('included-table').innerHTML = data.included.map(item => `
-                <tr>
-                    <td><strong>${escapeHtml(item.canonicalName)}</strong></td>
-                    <td><span class="category-tag">${escapeHtml(item.category)}</span></td>
-                    <td><span class="deployment-tag ${item.deploymentType.toLowerCase()}">${item.deploymentType}</span></td>
-                    <td class="description-cell">${escapeHtml(item.description || '-')}</td>
-                    <td class="count-cell">${item.originalCount}</td>
-                    <td class="count-cell">${item.totalDevices}</td>
-                </tr>
-            `).join('');
+            renderIncludedTable(data.included);
 
             const categories = [...new Set(data.included.map(i => i.category))].sort();
             document.getElementById('filter-category').innerHTML = '<option value="">All Categories</option>' + 
@@ -1126,13 +1556,81 @@
             document.getElementById('results').style.display = 'block';
         }
 
+        function renderIncludedTable(items) {
+            document.getElementById('included-table').innerHTML = items.map(item => `
+                <tr data-canonical="${escapeHtml(item.canonicalName)}">
+                    <td><strong>${escapeHtml(item.canonicalName)}</strong></td>
+                    <td class="description-cell" title="${escapeHtml(item.description || '')}">${escapeHtml(item.description || '—')}</td>
+                    <td><span class="category-tag">${escapeHtml(item.category)}</span></td>
+                    <td><span class="deployment-tag ${item.deploymentType.toLowerCase()}">${item.deploymentType}</span></td>
+                    <td><span class="disposition-tag ${item.disposition}">${item.disposition}</span></td>
+                    <td>${item.replacementName ? `<span class="replacement-name">${escapeHtml(item.replacementName)}</span>` : '<span class="replacement-name none">—</span>'}</td>
+                    <td class="count-cell">${item.totalDevices}</td>
+                    <td>
+                        <button class="action-btn" onclick="openDispositionModal('${escapeHtml(item.canonicalName).replace(/'/g, "\\'")}', '${item.disposition}', ${item.replacementId || 'null'})">Edit</button>
+                        <button class="action-btn danger" onclick="excludeItem('${escapeHtml(item.canonicalName).replace(/'/g, "\\'")}')">Exclude</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function excludeItem(canonicalName) {
+            if (!currentResults) return;
+            
+            // Find the item in included
+            const itemIndex = currentResults.included.findIndex(i => i.canonicalName === canonicalName);
+            if (itemIndex === -1) return;
+            
+            const item = currentResults.included[itemIndex];
+            
+            // Move to excluded
+            currentResults.excluded.push({
+                name: item.canonicalName,
+                reason: 'User Excluded',
+                ruleReason: 'Manually excluded by user'
+            });
+            
+            // Remove from included
+            currentResults.included.splice(itemIndex, 1);
+            
+            // Update counts
+            document.getElementById('stat-output').textContent = currentResults.included.length;
+            document.getElementById('stat-excluded').textContent = currentResults.excluded.length;
+            document.getElementById('tab-included-count').textContent = currentResults.included.length;
+            document.getElementById('tab-excluded-count').textContent = currentResults.excluded.length;
+            
+            // Re-render tables
+            filterIncluded();
+            
+            // Re-render excluded table
+            document.getElementById('excluded-table').innerHTML = currentResults.excluded.map(exc => `
+                <tr>
+                    <td>${escapeHtml(exc.name)}</td>
+                    <td><span class="category-tag">${escapeHtml(exc.reason)}</span></td>
+                    <td style="color:var(--text-secondary)">${escapeHtml(exc.ruleReason || '-')}</td>
+                    <td><button class="action-btn include" onclick="openIncludeModal('${escapeHtml(exc.name).replace(/'/g, "\\'")}')">Include</button></td>
+                </tr>
+            `).join('');
+            
+            showToast(`"${canonicalName}" moved to Excluded`, 'success');
+            markUnsavedChanges();
+        }
+
         function resetAnalysis() {
+            // Check for unsaved changes before resetting
+            if (hasUnsavedChanges && !confirm('You have unsaved changes. Are you sure you want to start a new analysis?')) {
+                return;
+            }
+            
             currentResults = null;
+            currentClientId = null;  // Reset client ID for new analysis
+            markChangesSaved();  // Reset unsaved indicator
             document.getElementById('results').style.display = 'none';
             document.getElementById('dropZone').style.display = 'block';
             document.getElementById('fileInput').value = '';
             document.getElementById('agencyInput').value = '';
             document.getElementById('agency-display-container').style.display = 'none';
+            document.getElementById('save-btn-text').textContent = 'Save Client';  // Reset button text
             
             // Reset filters
             document.getElementById('search-included').value = '';
@@ -1147,6 +1645,17 @@
             document.getElementById('panel-included').classList.add('active');
         }
 
+        function startNewClient() {
+            // Reset and switch to analyze view
+            resetAnalysis();
+            
+            // Switch to analyze tab
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelector('.nav-tab[data-view="analyze"]').classList.add('active');
+            document.getElementById('analyze-view').classList.add('active');
+        }
+
         // Filtering
         document.getElementById('search-included').addEventListener('input', filterIncluded);
         document.getElementById('filter-category').addEventListener('change', filterIncluded);
@@ -1157,24 +1666,17 @@
             const search = document.getElementById('search-included').value.toLowerCase();
             const category = document.getElementById('filter-category').value;
             const deployment = document.getElementById('filter-deployment').value;
+            const disposition = document.getElementById('filter-disposition')?.value || '';
 
             const filtered = currentResults.included.filter(item => {
                 const matchSearch = !search || item.canonicalName.toLowerCase().includes(search) || (item.description || '').toLowerCase().includes(search);
                 const matchCategory = !category || item.category === category;
                 const matchDeployment = !deployment || item.deploymentType === deployment;
-                return matchSearch && matchCategory && matchDeployment;
+                const matchDisposition = !disposition || item.disposition === disposition;
+                return matchSearch && matchCategory && matchDeployment && matchDisposition;
             });
 
-            document.getElementById('included-table').innerHTML = filtered.map(item => `
-                <tr>
-                    <td><strong>${escapeHtml(item.canonicalName)}</strong></td>
-                    <td><span class="category-tag">${escapeHtml(item.category)}</span></td>
-                    <td><span class="deployment-tag ${item.deploymentType.toLowerCase()}">${item.deploymentType}</span></td>
-                    <td class="description-cell">${escapeHtml(item.description || '-')}</td>
-                    <td class="count-cell">${item.originalCount}</td>
-                    <td class="count-cell">${item.totalDevices}</td>
-                </tr>
-            `).join('');
+            renderIncludedTable(filtered);
         }
 
         document.getElementById('search-excluded').addEventListener('input', (e) => {
@@ -1197,13 +1699,16 @@
                 const response = await fetch('/api/export/csv', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ data: currentResults.included })
+                    body: JSON.stringify({ 
+                        data: currentResults.included,
+                        agency: currentResults.agency
+                    })
                 });
                 const blob = await response.blob();
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'software_analysis.csv';
+                a.download = `software_analysis_${currentResults.agency ? currentResults.agency.replace(/[^a-z0-9]/gi, '_') + '_' : ''}${new Date().toISOString().split('T')[0]}.csv`;
                 a.click();
                 URL.revokeObjectURL(url);
                 showToast('Export downloaded!', 'success');
@@ -1233,7 +1738,10 @@
                         <td style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem">${escapeHtml(rule.original_pattern)}</td>
                         <td><strong>${escapeHtml(rule.canonical_name)}</strong></td>
                         <td><span class="category-tag">${escapeHtml(rule.category || '-')}</span></td>
-                        <td><button class="action-btn danger" onclick="deleteMapping(${rule.id})">×</button></td>
+                        <td>
+                            <button class="action-btn" onclick='openEditMappingModal(${JSON.stringify(rule).replace(/'/g, "&#39;")})'>Edit</button>
+                            <button class="action-btn danger" onclick="deleteMapping(${rule.id})">×</button>
+                        </td>
                     </tr>
                 `).join('');
             } catch (error) {
@@ -1243,10 +1751,17 @@
 
         document.getElementById('exclusion-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const data = Object.fromEntries(new FormData(e.target));
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            // Handle custom category
+            const categorySelect = document.getElementById('exclusion-category-select');
+            data.category = getCategoryValue(categorySelect, 'exclusion-custom-category');
+            
             try {
                 await fetch('/api/exclusion-rules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
                 e.target.reset();
+                document.getElementById('exclusion-custom-category').style.display = 'none';
                 loadAdminData();
                 showToast('Exclusion rule added!', 'success');
             } catch (error) {
@@ -1256,10 +1771,17 @@
 
         document.getElementById('mapping-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const data = Object.fromEntries(new FormData(e.target));
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            // Handle custom category
+            const categorySelect = document.getElementById('mapping-category-select');
+            data.category = getCategoryValue(categorySelect, 'mapping-custom-category');
+            
             try {
                 await fetch('/api/software-mappings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
                 e.target.reset();
+                document.getElementById('mapping-custom-category').style.display = 'none';
                 loadAdminData();
                 showToast('Mapping added!', 'success');
             } catch (error) {
@@ -1288,6 +1810,65 @@
                 showToast('Failed to delete', 'error');
             }
         }
+
+        function openEditMappingModal(rule) {
+            document.getElementById('edit-mapping-id').value = rule.id;
+            document.getElementById('edit-mapping-pattern-type').value = rule.pattern_type || 'exact';
+            document.getElementById('edit-mapping-canonical').value = rule.canonical_name || '';
+            document.getElementById('edit-mapping-pattern').value = rule.original_pattern || '';
+            document.getElementById('edit-mapping-deployment').value = rule.deployment_type || 'Desktop';
+            document.getElementById('edit-mapping-description').value = rule.description || '';
+            
+            // Set category - check if it exists in dropdown
+            const categorySelect = document.getElementById('edit-mapping-category-select');
+            const categoryValue = rule.category || '';
+            const optionExists = Array.from(categorySelect.options).some(opt => opt.value === categoryValue);
+            
+            if (optionExists) {
+                categorySelect.value = categoryValue;
+                document.getElementById('edit-mapping-custom-category').style.display = 'none';
+            } else if (categoryValue) {
+                // Category not in list - add it as an option temporarily or use custom
+                categorySelect.value = '__custom__';
+                document.getElementById('edit-mapping-custom-category').style.display = 'block';
+                document.getElementById('edit-mapping-custom-category').value = categoryValue;
+            } else {
+                categorySelect.value = '';
+            }
+            
+            document.getElementById('edit-mapping-modal').style.display = 'flex';
+        }
+
+        function closeEditMappingModal() {
+            document.getElementById('edit-mapping-modal').style.display = 'none';
+            document.getElementById('edit-mapping-form').reset();
+            document.getElementById('edit-mapping-custom-category').style.display = 'none';
+        }
+
+        document.getElementById('edit-mapping-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const id = document.getElementById('edit-mapping-id').value;
+            
+            const data = Object.fromEntries(formData);
+            
+            // Handle custom category
+            const categorySelect = document.getElementById('edit-mapping-category-select');
+            data.category = getCategoryValue(categorySelect, 'edit-mapping-custom-category');
+            
+            try {
+                await fetch(`/api/software-mappings/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                closeEditMappingModal();
+                loadAdminData();
+                showToast('Mapping updated!', 'success');
+            } catch (error) {
+                showToast('Failed to update mapping', 'error');
+            }
+        });
 
         function openFeedbackModal(softwareName) {
             document.getElementById('modal-software-name').value = softwareName;
@@ -1438,31 +2019,219 @@
             }
         }
 
-        async function loadHistory() {
-            try {
-                const history = await fetch('/api/history').then(r => r.json());
-                const historyTable = document.getElementById('history-table');
-                
-                if (history.length === 0) {
-                    historyTable.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary);padding:2rem;">No analysis history yet</td></tr>';
-                    return;
-                }
+        // ============================================
+        // SAVED CLIENTS
+        // ============================================
 
-                historyTable.innerHTML = history.map(item => `
-                    <tr>
-                        <td style="white-space:nowrap">${new Date(item.uploaded_at).toLocaleDateString()}</td>
-                        <td><strong>${escapeHtml(item.agency_name || '-')}</strong></td>
-                        <td>${escapeHtml(item.upload_filename)}</td>
-                        <td class="count-cell">${item.input_count || '-'}</td>
-                        <td class="count-cell">${item.output_count || '-'}</td>
-                        <td class="count-cell">${item.excluded_count || '-'}</td>
-                        <td><span class="badge ${item.status === 'completed' ? 'green' : 'orange'}">${item.status}</span></td>
-                    </tr>
-                `).join('');
+        let currentClientId = null;  // Track if editing an existing client
+        let allClients = [];
+
+        async function loadClients() {
+            try {
+                const clients = await fetch('/api/clients').then(r => r.json());
+                allClients = clients;
+                renderClientsTable(clients);
             } catch (error) {
-                showToast('Failed to load history', 'error');
+                showToast('Failed to load clients', 'error');
             }
         }
+
+        function renderClientsTable(clients) {
+            const search = document.getElementById('search-clients')?.value?.toLowerCase() || '';
+            const statusFilter = document.getElementById('filter-client-status')?.value || '';
+            
+            const filtered = clients.filter(c => {
+                const matchSearch = !search || c.agency_name.toLowerCase().includes(search);
+                const matchStatus = !statusFilter || c.status === statusFilter;
+                return matchSearch && matchStatus;
+            });
+
+            const table = document.getElementById('clients-table');
+            
+            if (filtered.length === 0) {
+                table.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);padding:2rem;">No clients found. Upload a file and save to create one.</td></tr>';
+                return;
+            }
+
+            table.innerHTML = filtered.map(client => {
+                const summary = client.summary || {};
+                const pendingCount = summary.pendingDisposition || '?';
+                return `
+                    <tr class="client-row" onclick="loadClient(${client.id})">
+                        <td><strong>${escapeHtml(client.agency_name)}</strong></td>
+                        <td><span class="status-badge ${client.status}">${formatStatus(client.status)}</span></td>
+                        <td class="count-cell">${summary.totalOutput || '-'}</td>
+                        <td class="count-cell">${pendingCount}</td>
+                        <td style="white-space:nowrap">${formatDate(client.updated_at)}</td>
+                        <td>
+                            <button class="action-btn" onclick="event.stopPropagation(); loadClient(${client.id})">Open</button>
+                            <button class="action-btn danger" onclick="event.stopPropagation(); deleteClient(${client.id}, '${escapeHtml(client.agency_name).replace(/'/g, "\\'")}')">×</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function formatStatus(status) {
+            const labels = {
+                'in_progress': 'In Progress',
+                'review': 'Review',
+                'complete': 'Complete'
+            };
+            return labels[status] || status;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+
+        async function loadClient(clientId) {
+            // Check for unsaved changes before loading different client
+            if (hasUnsavedChanges && !confirm('You have unsaved changes. Are you sure you want to load a different client?')) {
+                return;
+            }
+            
+            try {
+                const client = await fetch(`/api/clients/${clientId}`).then(r => r.json());
+                
+                // Set the current client ID for updates
+                currentClientId = client.id;
+                markChangesSaved();  // Reset - we just loaded fresh data
+                
+                // Parse the analysis data
+                const analysisData = typeof client.analysis_data === 'string' 
+                    ? JSON.parse(client.analysis_data) 
+                    : client.analysis_data;
+                
+                // Store as current results
+                currentResults = {
+                    agency: client.agency_name,
+                    summary: typeof client.summary === 'string' ? JSON.parse(client.summary) : client.summary,
+                    included: analysisData.included || [],
+                    excluded: analysisData.excluded || [],
+                    unmapped: analysisData.unmapped || []
+                };
+
+                // Update save button text
+                document.getElementById('save-btn-text').textContent = 'Update Client';
+
+                // Switch to analyze view and display results
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                document.querySelector('.nav-tab[data-view="analyze"]').classList.add('active');
+                document.getElementById('analyze-view').classList.add('active');
+
+                // Hide upload zone, show results
+                document.getElementById('dropZone').style.display = 'none';
+                displayResults(currentResults);
+
+                showToast(`Loaded: ${client.agency_name}`, 'success');
+            } catch (error) {
+                showToast('Failed to load client: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteClient(clientId, agencyName) {
+            if (!confirm(`Delete "${agencyName}"? This cannot be undone.`)) return;
+            try {
+                await fetch(`/api/clients/${clientId}`, { method: 'DELETE' });
+                loadClients();
+                showToast('Client deleted', 'success');
+            } catch (error) {
+                showToast('Failed to delete client', 'error');
+            }
+        }
+
+        // Save Client Modal
+        function openSaveClientModal() {
+            if (!currentResults) {
+                showToast('No analysis to save', 'error');
+                return;
+            }
+            
+            document.getElementById('save-client-agency').value = currentResults.agency || '';
+            document.getElementById('save-client-id').value = currentClientId || '';
+            document.getElementById('save-client-title').textContent = currentClientId ? 'Update Client' : 'Save Client';
+            document.getElementById('save-client-modal').style.display = 'flex';
+        }
+
+        function closeSaveClientModal() {
+            document.getElementById('save-client-modal').style.display = 'none';
+            document.getElementById('save-client-form').reset();
+        }
+
+        document.getElementById('save-client-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const clientId = document.getElementById('save-client-id').value;
+            
+            // Recalculate pending count
+            const pendingCount = currentResults.included.filter(i => i.disposition === 'pending').length;
+            
+            const payload = {
+                agency_name: formData.get('agency_name'),
+                status: formData.get('status'),
+                notes: formData.get('notes'),
+                analysis_data: {
+                    included: currentResults.included,
+                    excluded: currentResults.excluded,
+                    unmapped: currentResults.unmapped
+                },
+                summary: {
+                    totalInput: currentResults.summary?.totalInput || currentResults.included.length + currentResults.excluded.length,
+                    totalOutput: currentResults.included.length,
+                    excluded: currentResults.excluded.length,
+                    unmapped: currentResults.unmapped.length,
+                    pendingDisposition: pendingCount
+                },
+                source_filename: currentResults.sourceFilename || null
+            };
+
+            try {
+                let response;
+                if (clientId) {
+                    // Update existing
+                    response = await fetch(`/api/clients/${clientId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                } else {
+                    // Create new
+                    response = await fetch('/api/clients', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }
+
+                if (!response.ok) throw new Error('Failed to save');
+                
+                const savedClient = await response.json();
+                currentClientId = savedClient.id;
+                currentResults.agency = payload.agency_name;
+                
+                // Update agency display
+                document.getElementById('agency-display-name').textContent = payload.agency_name;
+                document.getElementById('agency-display-container').style.display = 'block';
+                
+                // Update button text
+                document.getElementById('save-btn-text').textContent = 'Update Client';
+
+                closeSaveClientModal();
+                markChangesSaved();
+                showToast(clientId ? 'Client updated!' : 'Client saved!', 'success');
+            } catch (error) {
+                showToast('Failed to save: ' + error.message, 'error');
+            }
+        });
+
+        // Client filter listeners
+        document.getElementById('search-clients')?.addEventListener('input', () => renderClientsTable(allClients));
+        document.getElementById('filter-client-status')?.addEventListener('change', () => renderClientsTable(allClients));
 
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
@@ -1486,6 +2255,183 @@
             div.textContent = text;
             return div.innerHTML;
         }
+
+        // ============================================
+        // PHASE 3: HUB STANDARDS & DISPOSITIONS
+        // ============================================
+
+        let approvedSoftwareList = [];
+
+        async function loadHubStandards() {
+            try {
+                // Load approved software
+                const approved = await fetch('/api/approved-software').then(r => r.json());
+                approvedSoftwareList = approved;
+                
+                document.getElementById('approved-software-table').innerHTML = approved.length === 0 
+                    ? '<tr><td colspan="4" style="text-align:center;color:var(--text-secondary);padding:2rem;">No approved software defined</td></tr>'
+                    : approved.map(item => `
+                        <tr>
+                            <td><strong>${escapeHtml(item.name)}</strong></td>
+                            <td><span class="category-tag">${escapeHtml(item.category || '-')}</span></td>
+                            <td style="color:var(--text-secondary)">${escapeHtml(item.vendor || '-')}</td>
+                            <td><button class="action-btn danger" onclick="deleteApprovedSoftware(${item.id})">×</button></td>
+                        </tr>
+                    `).join('');
+
+                // Load disposition mappings
+                const dispositions = await fetch('/api/disposition-mappings').then(r => r.json());
+                renderDispositionMappings(dispositions);
+                
+                // Update replacement dropdown
+                updateReplacementDropdown();
+                
+            } catch (error) {
+                showToast('Failed to load Hub Standards', 'error');
+            }
+        }
+
+        function renderDispositionMappings(dispositions) {
+            const search = document.getElementById('search-dispositions')?.value?.toLowerCase() || '';
+            const statusFilter = document.getElementById('filter-disposition-status')?.value || '';
+            
+            const filtered = dispositions.filter(d => {
+                const matchSearch = !search || d.canonical_name.toLowerCase().includes(search);
+                const matchStatus = !statusFilter || d.disposition === statusFilter;
+                return matchSearch && matchStatus;
+            });
+
+            document.getElementById('disposition-mappings-table').innerHTML = filtered.length === 0
+                ? '<tr><td colspan="4" style="text-align:center;color:var(--text-secondary);padding:2rem;">No disposition mappings found</td></tr>'
+                : filtered.map(item => `
+                    <tr>
+                        <td>${escapeHtml(item.canonical_name)}</td>
+                        <td><span class="disposition-tag ${item.disposition}">${item.disposition}</span></td>
+                        <td>${item.replacement_name ? `<span class="replacement-name">${escapeHtml(item.replacement_name)}</span>` : '<span class="replacement-name none">—</span>'}</td>
+                        <td><button class="action-btn" onclick="openDispositionModal('${escapeHtml(item.canonical_name).replace(/'/g, "\\'")}', '${item.disposition}', ${item.approved_software_id || 'null'})">Edit</button></td>
+                    </tr>
+                `).join('');
+        }
+
+        function updateReplacementDropdown() {
+            const select = document.getElementById('replacement-select');
+            select.innerHTML = '<option value="">Select Hub standard...</option>' +
+                approvedSoftwareList.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.category || 'Uncategorized')})</option>`).join('');
+        }
+
+        // Approved Software Form
+        document.getElementById('approved-software-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            // Handle custom category
+            const categorySelect = document.getElementById('approved-category-select');
+            data.category = getCategoryValue(categorySelect, 'approved-custom-category');
+            
+            try {
+                const response = await fetch('/api/approved-software', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error);
+                }
+                e.target.reset();
+                document.getElementById('approved-custom-category').style.display = 'none';
+                loadHubStandards();
+                showToast('Approved software added!', 'success');
+            } catch (error) {
+                showToast('Failed to add: ' + error.message, 'error');
+            }
+        });
+
+        async function deleteApprovedSoftware(id) {
+            if (!confirm('Delete this approved software?')) return;
+            try {
+                await fetch(`/api/approved-software/${id}`, { method: 'DELETE' });
+                loadHubStandards();
+                showToast('Deleted', 'success');
+            } catch (error) {
+                showToast('Failed to delete', 'error');
+            }
+        }
+
+        // Disposition Modal
+        function openDispositionModal(canonicalName, disposition, replacementId) {
+            document.getElementById('disposition-canonical-name').value = canonicalName;
+            document.getElementById('disposition-software-display').value = canonicalName;
+            document.getElementById('disposition-select').value = disposition || 'pending';
+            document.getElementById('replacement-select').value = replacementId || '';
+            toggleReplacementField();
+            updateReplacementDropdown();
+            document.getElementById('disposition-modal').style.display = 'flex';
+        }
+
+        function closeDispositionModal() {
+            document.getElementById('disposition-modal').style.display = 'none';
+            document.getElementById('disposition-form').reset();
+        }
+
+        function toggleReplacementField() {
+            const disposition = document.getElementById('disposition-select').value;
+            document.getElementById('replacement-field').style.display = (disposition === 'replace' || disposition === 'keep') ? 'block' : 'none';
+        }
+
+        document.getElementById('disposition-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = {
+                canonical_name: formData.get('canonical_name'),
+                disposition: formData.get('disposition'),
+                approved_software_id: formData.get('approved_software_id') || null,
+                notes: formData.get('notes')
+            };
+
+            try {
+                await fetch('/api/disposition-mappings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                closeDispositionModal();
+                showToast('Disposition saved!', 'success');
+                
+                // Refresh the Hub Standards disposition mappings table
+                const dispositions = await fetch('/api/disposition-mappings').then(r => r.json());
+                renderDispositionMappings(dispositions);
+                
+                // Update the table row if results are displayed
+                if (currentResults) {
+                    const item = currentResults.included.find(i => i.canonicalName === data.canonical_name);
+                    if (item) {
+                        item.disposition = data.disposition;
+                        item.replacementId = data.approved_software_id;
+                        item.replacementName = approvedSoftwareList.find(s => s.id == data.approved_software_id)?.name || null;
+                        filterIncluded();
+                        markUnsavedChanges();
+                    }
+                }
+            } catch (error) {
+                showToast('Failed to save disposition', 'error');
+            }
+        });
+
+        // Disposition filter listeners
+        document.getElementById('search-dispositions')?.addEventListener('input', async () => {
+            const dispositions = await fetch('/api/disposition-mappings').then(r => r.json());
+            renderDispositionMappings(dispositions);
+        });
+
+        document.getElementById('filter-disposition-status')?.addEventListener('change', async () => {
+            const dispositions = await fetch('/api/disposition-mappings').then(r => r.json());
+            renderDispositionMappings(dispositions);
+        });
+
+        // Add disposition filter to included results
+        document.getElementById('filter-disposition')?.addEventListener('change', filterIncluded);
 
         loadAdminData();
     </script>
